@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1117" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="/icons/favicon-32.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="My Stars" />
+<title>My Stars</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+:root {
+  --bg: #f6f7fb; --card: #fff; --text: #171923; --muted: #6b7280; --line: #e5e7eb;
+  --accent: #6d4aff; --accent-soft: #efeaff; --star: #f5a524; --mark: #fff1b8;
+  --radius: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1117; --card: #181b24; --text: #eef0f5; --muted: #9aa1b2; --line: #272b37;
+    --accent: #9b85ff; --accent-soft: #241f3d; --mark: #5a4a0f; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Poppins, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+
+.app-header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: calc(env(safe-area-inset-top) + 12px) 16px 10px;
+  border-bottom: 1px solid var(--line); }
+.header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 760px; margin: 0 auto; }
+.app-title { font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
+.app-title .title-star { color: var(--star); }
+.btn-refresh { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: .8rem; cursor: pointer; }
+.btn-refresh[disabled] { opacity: .6; }
+
+.search-wrap { position: relative; max-width: 760px; margin: 10px auto 0; }
+.search-input { width: 100%; font-size: 16px; padding: 13px 44px 13px 16px; border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--card); outline: none; }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.btn-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; width: 36px; height: 36px;
+  font-size: 1.2rem; color: var(--muted); cursor: pointer; display: none; }
+.search-wrap.has-value .btn-clear { display: block; }
+
+.toolbar { display: flex; align-items: center; gap: 8px; max-width: 760px; margin: 10px auto 0; flex-wrap: wrap; }
+.result-count { font-size: .8rem; color: var(--muted); flex: 1; min-width: 120px; }
+.sort-select { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 10px; font-size: .8rem; }
+.btn-similar-query { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 8px 14px; font-size: .8rem; font-weight: 600;
+  cursor: pointer; display: none; width: 100%; }
+.toolbar.has-query .btn-similar-query { display: block; }
+
+.repo-list { list-style: none; margin: 0 auto; padding: 12px 12px calc(env(safe-area-inset-bottom) + 24px); max-width: 760px; display: grid; gap: 10px; }
+.repo-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.repo-head { display: flex; align-items: center; gap: 10px; }
+.repo-avatar { width: 32px; height: 32px; border-radius: 8px; flex: none; background: var(--line); }
+.repo-name { font-weight: 600; font-size: .98rem; text-decoration: none; word-break: break-word; line-height: 1.25; }
+.repo-owner { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); }
+.repo-desc { margin: 8px 0 0; font-size: .88rem; line-height: 1.45; color: var(--text); opacity: .9; }
+.repo-desc.is-empty { color: var(--muted); font-style: italic; }
+.repo-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.topic-chip { border: 0; font-size: .7rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); cursor: pointer; font-weight: 500; }
+.repo-meta { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: .75rem; color: var(--muted); flex-wrap: wrap; }
+.meta-stars::before { content: '★ '; color: var(--star); }
+.meta-archived { color: #e5484d; }
+.repo-actions { margin-left: auto; display: flex; gap: 6px; }
+.btn-card { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 11px; font-size: .75rem; cursor: pointer; text-decoration: none; }
+mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+.empty-state { text-align: center; color: var(--muted); padding: 48px 16px; font-size: .9rem; }
+.btn-similar-inline { display: block; margin: 14px auto 0; border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 9px 16px; font-weight: 600; font-size: .85rem; cursor: pointer; }
+.weak-divider { text-align: center; padding: 6px 0; }
+.btn-weak-toggle { border: 1px dashed var(--line); background: transparent; border-radius: 999px; padding: 7px 14px; font-size: .8rem; color: var(--muted); cursor: pointer; }
+.repo-card.is-weak { opacity: .75; }
+
+/* bottom sheet */
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--bg); border-radius: 20px 20px 0 0;
+  max-height: 85vh; overflow: auto; transform: translateY(100%); transition: transform .25s ease; padding-bottom: env(safe-area-inset-bottom); }
+.sheet-open .sheet-backdrop { opacity: 1; pointer-events: auto; }
+.sheet-open .sheet { transform: none; }
+.sheet-handle { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 10px auto 0; }
+.sheet-header { display: flex; align-items: flex-start; gap: 8px; padding: 10px 16px 0; }
+.sheet-title { font-size: 1rem; font-weight: 600; margin: 0; flex: 1; }
+.sheet-sub { font-size: .75rem; color: var(--muted); font-weight: 400; display: block; margin-top: 2px; word-break: break-word; }
+.btn-sheet-close { border: 0; background: var(--card); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+.sheet .repo-list { padding-top: 12px; }
+.btn-gh-search { display: block; text-align: center; margin: 0 12px 16px; padding: 10px; border-radius: var(--radius); border: 1px dashed var(--line);
+  font-size: .8rem; color: var(--muted); text-decoration: none; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; margin: 40px auto; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (min-width: 640px) {
+  .btn-similar-query { width: auto; }
+  .sheet { left: 50%; right: auto; width: 600px; transform: translate(-50%, 100%); }
+  .sheet-open .sheet { transform: translate(-50%, 0); }
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-row">
+    <h1 class="app-title"><span class="title-star">★</span> My Stars</h1>
+    <button class="btn-refresh" id="refresh" title="Re-fetch stars from GitHub">↻ Sync</button>
+  </div>
+  <div class="search-wrap" id="searchWrap">
+    <input class="search-input" id="q" type="search" placeholder="Search name, description, topics…" autocomplete="off" enterkeyhint="search" />
+    <button class="btn-clear" id="clear" aria-label="Clear search">×</button>
+  </div>
+  <div class="toolbar" id="toolbar">
+    <span class="result-count" id="count">Loading…</span>
+    <select class="sort-select" id="sort" aria-label="Sort">
+      <option value="relevance">Best match</option>
+      <option value="starred">Recently starred</option>
+      <option value="stars">Most stars</option>
+      <option value="updated">Recently updated</option>
+      <option value="name">Name</option>
+    </select>
+    <button class="btn-similar-query" id="similarQuery">🔭 Find top 5 similar on GitHub</button>
+  </div>
+</header>
+
+<ul class="repo-list" id="list"></ul>
+
+<div class="sheet-root" id="sheetRoot">
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2 class="sheet-title" id="sheetTitle">Similar on GitHub<span class="sheet-sub" id="sheetSub"></span></h2>
+      <button class="btn-sheet-close" id="sheetClose" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </section>
+</div>
+
+<script src="/search.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let repos = [];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n);
+const ago = (d) => { const days = (Date.now() - new Date(d)) / 864e5;
+  return days < 1 ? 'today' : days < 30 ? `${Math.floor(days)}d ago` : days < 365 ? `${Math.floor(days / 30)}mo ago` : `${Math.floor(days / 365)}y ago`; };
+
+const hl = (text, cs) => StarSearch.highlight(text, cs, esc);
+
+function card(r, cs = [], { similarBtn = true } = {}) {
+  const desc = r.description ? hl(r.description, cs) : 'No description';
+  return `<li class="repo-card">
+    <div class="repo-head">
+      <img class="repo-avatar" src="${esc(r.avatar)}&s=64" alt="" loading="lazy" />
+      <a class="repo-name" href="${esc(r.url)}" target="_blank" rel="noopener">${hl(r.name, cs)}<span class="repo-owner">${esc(r.owner)}</span></a>
+    </div>
+    <p class="repo-desc ${r.description ? '' : 'is-empty'}">${desc}</p>
+    ${r.topics.length ? `<div class="repo-topics">${r.topics.slice(0, 8).map((t) => `<button class="topic-chip" data-topic="${esc(t)}">${hl(t, cs)}</button>`).join('')}</div>` : ''}
+    <div class="repo-meta">
+      <span class="meta-stars">${fmt(r.stars)}</span>
+      ${r.language ? `<span class="meta-lang">${esc(r.language)}</span>` : ''}
+      <span class="meta-updated">${ago(r.updated)}</span>
+      ${r.archived ? '<span class="meta-archived">archived</span>' : ''}
+      <span class="repo-actions">
+        ${r.homepage ? `<a class="btn-card btn-site" href="${esc(r.homepage)}" target="_blank" rel="noopener">Site</a>` : ''}
+        ${similarBtn ? `<button class="btn-card btn-similar" data-repo="${esc(r.full_name)}">Similar</button>` : ''}
+      </span>
+    </div>
+  </li>`;
+}
+
+let showWeak = false;
+function render() {
+  const q = $('q').value.trim();
+  $('searchWrap').classList.toggle('has-value', !!q);
+  $('toolbar').classList.toggle('has-query', !!q);
+  const { concepts, strong, weak } = StarSearch.search(repos, q);
+  const sort = $('sort').value;
+  const by = {
+    starred: (a, b) => b.starred_at.localeCompare(a.starred_at),
+    stars: (a, b) => b.stars - a.stars,
+    updated: (a, b) => (b.updated || '').localeCompare(a.updated || ''),
+    name: (a, b) => a.name.localeCompare(b.name),
+  }[sort === 'relevance' && !concepts.length ? 'starred' : sort];
+  const order = (l) => (by ? [...l].sort(by) : l);
+  const list = order(strong);
+
+  $('count').textContent = concepts.length ? `${strong.length} of ${repos.length} stars` : `${repos.length} stars`;
+  let html = list.map((r) => card(r, concepts)).join('');
+  if (concepts.length && !strong.length) {
+    html += `<li class="empty-state no-strong">Nothing in your stars strongly matches “${esc(q)}”.
+      <button class="btn-similar-inline" data-action="similar-query">🔭 Search GitHub for the top 5</button></li>`;
+  }
+  if (weak.length) {
+    html += `<li class="weak-divider"><button class="btn-weak-toggle" data-action="toggle-weak">
+      ${showWeak ? 'Hide' : 'Show'} ${weak.length} weaker match${weak.length > 1 ? 'es' : ''}</button></li>`;
+    if (showWeak) html += order(weak).map((r) => card(r, concepts).replace('repo-card', 'repo-card is-weak')).join('');
+  }
+  $('list').innerHTML = html;
+}
+
+async function load(refresh = false) {
+  $('refresh').disabled = true;
+  $('refresh').textContent = refresh ? 'Syncing…' : '↻ Sync';
+  try {
+    const res = await fetch('/api/stars' + (refresh ? '?refresh' : ''));
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    repos = data.repos; repos.forEach(StarSearch.indexRepo);
+    $('refresh').title = `Last synced ${new Date(data.fetched_at).toLocaleString()}`;
+    render();
+  } catch (e) {
+    $('count').textContent = 'Failed to load: ' + e.message;
+  } finally {
+    $('refresh').disabled = false; $('refresh').textContent = '↻ Sync';
+  }
+}
+
+async function openSimilar(query, label) {
+  document.body.classList.add('sheet-open');
+  $('sheetSub').textContent = label;
+  $('sheetBody').innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await fetch('/api/similar?q=' + encodeURIComponent(query));
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const ts = StarSearch.parse(data.query.replace(/in:\S+/g, ''));
+    const ghUrl = `https://github.com/search?type=repositories&s=stars&o=desc&q=${encodeURIComponent(data.query)}`;
+    $('sheetSub').textContent = `${label} · searched: ${[data.query.replace(/ in:\S+/, ''), ...data.phrases].join(' · ')}`;
+    $('sheetBody').innerHTML = (data.items.length
+      ? `<ul class="repo-list">${data.items.map((r) => card(r, ts, { similarBtn: false })).join('')}</ul>`
+      : '<p class="empty-state">No new repos found (you may have starred them all!).</p>')
+      + `<a class="btn-gh-search" href="${ghUrl}" target="_blank" rel="noopener">See more on GitHub →</a>`;
+  } catch (e) {
+    $('sheetBody').innerHTML = `<p class="empty-state">Search failed: ${esc(e.message)}</p>`;
+  }
+}
+const closeSheet = () => document.body.classList.remove('sheet-open');
+
+let t;
+$('q').addEventListener('input', () => {
+  clearTimeout(t); showWeak = false;
+  t = setTimeout(() => { render(); history.replaceState(null, '', $('q').value ? '?q=' + encodeURIComponent($('q').value) : location.pathname); }, 120);
+});
+$('clear').onclick = () => { $('q').value = ''; $('q').dispatchEvent(new Event('input')); $('q').focus(); };
+$('sort').onchange = render;
+$('refresh').onclick = () => load(true);
+$('similarQuery').onclick = () => openSimilar($('q').value, `Like “${$('q').value.trim()}”`);
+$('sheetBackdrop').onclick = closeSheet;
+$('sheetClose').onclick = closeSheet;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); } });
+document.addEventListener('click', (e) => {
+  const act = e.target.closest('[data-action]')?.dataset.action;
+  if (act === 'toggle-weak') { showWeak = !showWeak; render(); return; }
+  if (act === 'similar-query') { $('similarQuery').click(); return; }
+  const chip = e.target.closest('.topic-chip');
+  if (chip) { $('q').value = chip.dataset.topic; closeSheet(); $('q').dispatchEvent(new Event('input')); window.scrollTo({ top: 0 }); return; }
+  const sim = e.target.closest('.btn-similar');
+  if (sim) {
+    const r = repos.find((x) => x.full_name === sim.dataset.repo);
+    // Topics describe purpose best; fall back to description words.
+    openSimilar(r.topics.length >= 2 ? r.topics.slice(0, 3).join(' ') : `${r.topics.join(' ')} ${r.description}`, `Like ${r.full_name}`);
+  }
+});
+
+$('q').value = new URLSearchParams(location.search).get('q') || '';
+load();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+</script>
+</body>
+</html>
